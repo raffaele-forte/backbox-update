@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright(c) 2011-2013 Raffaele Forte <raffaele.forte@gmail.com>
+# Copyright(c) 2011-2014 Raffaele Forte <raffaele.forte@gmail.com>
 # http://www.backbox.org/
 #
 # backbox-update is free software: you can redistribute it and/or
@@ -29,6 +29,8 @@ GREEN = '\033[1;92m'
 RED = '\033[1;91m'
 ENDC = '\033[1;00m'
 
+MENU = '/menu/update/'
+
 
 def print_banner():
 	header = BLUE + ' __________                __   __________                \n' + ENDC
@@ -48,12 +50,12 @@ def print_menu():
 
 
 def gem_update():
-	print BLUE + '\n[i] Running gems update\n' + ENDC
+	print BLUE + '\n[i] Running "gem update"\n' + ENDC
 	subprocess.check_call("gem update --no-rdoc --no-ri", shell=True)
 
 
 def aptget(command):
-	print BLUE + '[i] Running apt-get\n' + ENDC
+	print BLUE + '[i] Running "apt-get"\n' + ENDC
 	subprocess.check_call('apt-get ' + command, shell=True)
 
 
@@ -62,16 +64,16 @@ def aptget_update():
 	then = datetime.datetime.fromtimestamp(os.path.getmtime('/var/lib/apt/periodic/update-success-stamp'))
 	delta = now - then
 	if delta.total_seconds() > 900:
-		print BLUE + '\n[i] Running apt-get update\n' + ENDC
+		print BLUE + '\n[i] Running "apt-get update"\n' + ENDC
 		subprocess.check_call('apt-get update -qq', stdout=DEVNULL, stderr=DEVNULL, shell=True)
 		print 'Reading package lists... Done\n'
 	else:
-		print BLUE + '\n[i] Skipping apt-get update\n' + ENDC
+		print BLUE + '\n[i] Skipping "apt-get update"\n' + ENDC
 		print 'Reading package lists... Already done\n'
 
 
 def tools():
-	tools = os.listdir('/menu/update/')
+	tools = os.listdir(MENU)
 	tools.sort()
 	return tools
 		
@@ -82,7 +84,7 @@ def get_tool():
 		n = input('\nMake your choice ' + BLUE + '> ' + ENDC)
 		item = [menu_items[n]]
 	except Exception:
-		sys.exit(RED + '\n[!] Invalid option. Quitting...\n' + ENDC)
+		sys.exit(RED + '\n[!] No option. Quitting...\n' + ENDC)
 	return item[0]
 
 
@@ -101,32 +103,38 @@ def update(tool, sys_type):
 			if answer.lower() == 'y':
 				print ''
 				aptget('install -y backbox-minimal --reinstall')
+		elif sys_type.lower() == 'server' :
+			answer = raw_input('\nDo you want reinstall backbox-server? [y/N] ' + BLUE + '> ' + ENDC)
+			if answer.lower() == 'y':
+				print ''
+				aptget('install -y backbox-server --reinstall')
 		else :
-			sys.exit(RED + '\n[!] Bad system type. Options: [desktop|minimal]\n' + ENDC)
-		
-		print BLUE + '\n[i] Updating tools\n' + ENDC
+			sys.exit(RED + '\n[!] Bad system type. Options: [desktop|minimal|server]\n' + ENDC)
+			
+		print BLUE + '\n[i] Updating tools, "Ctrl-C" to skip\n' + ENDC
 		for num, tool in enumerate(tools()):
+			print '  %2i)\t %-15s ' % (num + 1, tool) + '\t',
+			sys.stdout.flush()
 			try:
-				subprocess.check_call('sh /menu/update/' + tool, stdout=DEVNULL, stderr=DEVNULL, shell=True)
-				print '  %2i)\t %-15s ' % (num + 1, tool) + '\t' + GREEN + 'ok' + ENDC 
+				subprocess.check_call('sh ' + MENU + tool, stdout=DEVNULL, stderr=DEVNULL, shell=True)
+				print GREEN + 'done' + ENDC
 			except:
-				print '  %2i)\t %-15s ' % (num + 1, tool) + '\t' + RED + 'ko' + ENDC
+				print RED + 'error' + ENDC
 				pass 
-		#gem_update()
 		print BLUE + '\n[i] System updated!\n' + ENDC
 		sys.exit()
 	else:
 		aptget('install ' + tool)
-		print BLUE + '\n[i] Running /menu/update/' + tool + ' script\n' + ENDC
-		subprocess.call('sh /menu/update/' + tool, shell=True)
+		print BLUE + '\n[i] Running update script\n' + ENDC
+		subprocess.call('sh ' + MENU + tool, shell=True)
 
 
 def main():
 	
 	# Parse command line arguments
-	parser = argparse.ArgumentParser(description='BackBox Update script helps you to keep updated your system and tools', version='%(prog)s v.0.6 - Copyleft by Raffaele Forte')
+	parser = argparse.ArgumentParser(description='BackBox Update script helps you to keep updated your system and tools', version='%(prog)s v.0.7 - Copyleft by Raffaele Forte')
 	parser.add_argument('-l', '--list', action='store_true', help='show all tools')
-	parser.add_argument('type', help='system type, "desktop" or "minimal"')
+	parser.add_argument('type', help='system type, "desktop", "minimal" or "server"')
 	group = parser.add_argument_group('update options, only root:')
 	group.add_argument('-a', '--all', action='store_true', help='update all, system and tools')
 	group.add_argument('-g', '--gems', action='store_true', help='update ruby gems')
