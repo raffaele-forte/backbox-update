@@ -46,16 +46,14 @@ def print_banner():
 def print_menu():
 	menu_items = ['Update all'] + tools()
 	for num, tool in enumerate(menu_items):
-		print '  %2i)\t %s' % (num, tool)
+		print '  %2i) %s' % (num, tool)
 
 
 def gem_update():
-	print BLUE + '\n[i] Running "gem update"\n' + ENDC
 	subprocess.check_call("gem update --no-rdoc --no-ri", shell=True)
 
 
 def aptget(command):
-	print BLUE + '[i] Running "apt-get"\n' + ENDC
 	subprocess.check_call('apt-get ' + command, shell=True)
 
 
@@ -64,12 +62,8 @@ def aptget_update():
 	then = datetime.datetime.fromtimestamp(os.path.getmtime('/var/lib/apt/periodic/update-success-stamp'))
 	delta = now - then
 	if delta.total_seconds() > 900:
-		print BLUE + '\n[i] Running "apt-get update"\n' + ENDC
+		print BLUE + '[i] Reading package lists...\n' + ENDC
 		subprocess.check_call('apt-get update -qq', stdout=DEVNULL, stderr=DEVNULL, shell=True)
-		print 'Reading package lists... Done\n'
-	else:
-		print BLUE + '\n[i] Skipping "apt-get update"\n' + ENDC
-		print 'Reading package lists... Already done\n'
 
 
 def tools():
@@ -82,6 +76,7 @@ def get_tool():
 	menu_items = ['Update all'] + tools()
 	try:
 		n = input('\nMake your choice ' + BLUE + '> ' + ENDC)
+		print ''
 		item = [menu_items[n]]
 	except Exception:
 		sys.exit(RED + '\n[!] No option. Quitting...\n' + ENDC)
@@ -111,21 +106,21 @@ def update(tool, sys_type):
 		else :
 			sys.exit(RED + '\n[!] Bad system type. Options: [desktop|minimal|server]\n' + ENDC)
 			
-		print BLUE + '\n[i] Updating tools, "Ctrl-C" to skip\n' + ENDC
+		print BLUE + '\n[i] Updating tools... (Ctrl-C to skip)\n' + ENDC
 		for num, tool in enumerate(tools()):
-			print '  %2i)\t %-15s ' % (num + 1, tool) + '\t',
+			print '  %2i) %-20s' % (num + 1, tool),
 			sys.stdout.flush()
 			try:
 				subprocess.check_call('sh ' + MENU + tool, stdout=DEVNULL, stderr=DEVNULL, shell=True)
-				print GREEN + 'done' + ENDC
+				print GREEN + 'DONE' + ENDC
 			except:
-				print RED + 'error' + ENDC
+				print RED + 'FAIL' + ENDC
 				pass 
 		print BLUE + '\n[i] System updated!\n' + ENDC
 		sys.exit()
 	else:
 		aptget('install ' + tool)
-		print BLUE + '\n[i] Running update script\n' + ENDC
+		print BLUE + '\n[i] Running "' + tool + '" update script...\n' + ENDC
 		subprocess.call('sh ' + MENU + tool, shell=True)
 
 
